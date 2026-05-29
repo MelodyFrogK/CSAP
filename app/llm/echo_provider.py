@@ -17,16 +17,18 @@ class EchoProvider(LLMProvider):
         has_context = "관련 문서 발췌" in user and "(관련 발췌 없음)" not in user
         if has_context:
             return {
-                "status": "[데모 출력] 제출 문서에서 관련 내용이 확인됩니다. 실제 LLM 연결 시 "
-                "문서 근거를 요약한 현황이 여기에 작성됩니다.",
-                "gaps": "[데모 출력] 세부 절차/주기/책임자 명시 여부를 점검하세요.",
-                "compliance": "부분충족",
-                "evidence": "제출 문서 발췌 일부",
+                "operation": "운영",
+                "status": "[데모 출력] 제출 문서에서 관련 이행 내용이 확인됩니다. 실제 LLM "
+                "연결 시 문서 근거를 요약한 운영 현황이 여기에 작성됩니다.",
+                "related_docs": "[데모] 제출 문서(정책/지침)",
+                "evidence": "[데모] 관련 화면/파일",
+                "improvement": "[데모 출력] 세부 절차·주기·책임자 명시 여부를 점검하세요.",
             }
         return {
+            "operation": "확인불가",
             "status": "",
-            "gaps": "[데모 출력] 제출 문서에서 관련 근거를 찾지 못했습니다. 해당 항목에 대한 "
-            "정책/절차 문서를 보완하세요.",
-            "compliance": "확인불가",
+            "related_docs": "",
             "evidence": "",
+            "improvement": "[데모 출력] 제출 문서에서 근거를 찾지 못했습니다. 해당 점검항목 "
+            "관련 정책/절차/증적을 보완하세요.",
         }

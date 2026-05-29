@@ -33,7 +33,8 @@ def main(argv: list[str] | None = None) -> int:
 
     res = pipeline.run(args.template, args.documents, args.out, progress=progress)
     print()
-    print(f"완료: 항목 {res.item_count}개 중 {res.processed}개 작성 → {res.output_path}")
+    print(f"시트: {', '.join(res.sheets)}")
+    print(f"완료: 점검항목 {res.item_count}개 중 {res.processed}개 작성 → {res.output_path}")
     if res.errors:
         print(f"경고 {len(res.errors)}건:")
         for e in res.errors[:10]:

@@ -1,4 +1,4 @@
-"""전체 처리 파이프라인: 문서 추출 → 청크 → 항목별 LLM 작성 → 엑셀 출력."""
+"""전체 처리 파이프라인: 문서 추출 → 청크 → 점검항목별 LLM 작성 → 엑셀 출력."""
 from __future__ import annotations
 
 import logging
@@ -25,6 +25,7 @@ class PipelineResult:
     output_path: Path
     item_count: int
     processed: int
+    sheets: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
 
@@ -45,11 +46,13 @@ def _process_item(item: ControlItem, chunks: list[Chunk]) -> ItemResult:
     user = prompts.build_user_prompt(item, relevant)
     data = provider.complete_json(prompts.SYSTEM_PROMPT, user)
     return ItemResult(
+        sheet=item.sheet,
         row=item.row,
+        operation=str(data.get("operation", "")).strip(),
         status=str(data.get("status", "")).strip(),
-        gaps=str(data.get("gaps", "")).strip(),
-        compliance=str(data.get("compliance", "")).strip(),
+        related_docs=str(data.get("related_docs", "")).strip(),
         evidence=str(data.get("evidence", "")).strip(),
+        improvement=str(data.get("improvement", "")).strip(),
     )
 
 
@@ -60,11 +63,11 @@ def run(
     progress: ProgressCb | None = None,
 ) -> PipelineResult:
     s = get_settings()
-    items, layout = template.read_items(template_path)
+    items, layouts = template.read_template(template_path)
     chunks = build_chunks(doc_paths)
-    log.info("항목 %d개, 청크 %d개", len(items), len(chunks))
+    log.info("시트 %d개, 점검항목 %d개, 청크 %d개", len(layouts), len(items), len(chunks))
 
-    results: dict[int, ItemResult] = {}
+    results: list[ItemResult] = []
     errors: list[str] = []
     done = 0
 
@@ -72,23 +75,26 @@ def run(
         try:
             return item, _process_item(item, chunks), None
         except LLMError as exc:
-            return item, None, f"행 {item.row}({item.code}): {exc}"
+            ref = f"{item.sheet} 행{item.row}"
+            return item, None, f"{ref}: {exc}"
 
     with ThreadPoolExecutor(max_workers=max(1, s.concurrency)) as pool:
         for item, res, err in pool.map(work, items):
             done += 1
             if res is not None:
-                results[item.row] = res
+                results.append(res)
             if err:
                 errors.append(err)
                 log.warning(err)
             if progress:
-                progress(done, len(items), item.code or item.title)
+                label = item.sub_control or item.control or item.check_item[:30]
+                progress(done, len(items), label)
 
-    out = excel_writer.write_results(template_path, layout, results, output_path)
+    out = excel_writer.write_results(template_path, layouts, results, output_path)
     return PipelineResult(
         output_path=out,
         item_count=len(items),
         processed=len(results),
+        sheets=list(layouts.keys()),
         errors=errors,
     )
