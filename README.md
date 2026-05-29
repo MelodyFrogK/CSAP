@@ -59,29 +59,52 @@ python -m app.cli --template "클라우드보안운영명세서.xlsx" \
 
 ## 실제 LLM 연결
 
-`.env`:
+`.env` 에서 공급자를 선택합니다. 4가지를 지원합니다.
+
+### A) 별도 API 키 없이 — Claude Code 재사용 (권장: 키 발급이 부담될 때)
+
+이미 설치·인증된 `claude` CLI(Claude Code)를 그대로 사용합니다. **추가 API 키가 필요 없습니다.**
 
 ```ini
-# Claude
+CSAP_LLM_PROVIDER=claude_cli
+CSAP_CLAUDE_CLI_MODEL=        # 빈 값=기본 모델. claude-haiku-4-5(저렴)/claude-sonnet-4-6 등
+```
+
+> 호출마다 CLI 프로세스가 떠서 직접 API보다 느립니다(항목당 수 초). 표본 검증·경량 사용에
+> 적합하며, 대량/운영 배포에는 아래 API 키 방식을 권장합니다. Claude Code에 설정된 인증
+> (구독 또는 키)을 따릅니다.
+
+### B) Anthropic API 키
+
+```ini
 CSAP_LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 CSAP_ANTHROPIC_MODEL=claude-sonnet-4-6
+```
 
-# 또는 OpenAI
+### C) OpenAI API 키
+
+```ini
 CSAP_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 CSAP_OPENAI_MODEL=gpt-4o
 ```
 
-`echo` 공급자는 키 없이 형식만 확인하는 **데모 더미**입니다(실제 분석 아님).
+### D) echo (데모 더미)
+
+키 없이 형식만 확인하는 더미입니다(실제 분석 아님).
 
 ### 실 LLM 출력 품질 검증 (표본)
 
 전체를 다 돌리기 전에, 대표 점검항목 표본만 호출해 출력 품질을 확인합니다.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export CSAP_LLM_PROVIDER=anthropic
+# 별도 키 없이 Claude Code 재사용
+export CSAP_LLM_PROVIDER=claude_cli
+python scripts/verify_llm.py --template "명세서.xlsx" --limit 10 회사문서.pdf
+
+# 또는 API 키 사용
+export CSAP_LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-...
 python scripts/verify_llm.py --template "명세서.xlsx" --limit 10 회사문서.pdf
 ```
 

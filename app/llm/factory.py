@@ -19,6 +19,14 @@ def get_provider() -> LLMProvider:
         from .openai_provider import OpenAIProvider
 
         return OpenAIProvider(model=s.openai_model)
+    if provider in ("claude_cli", "claude-cli", "cli"):
+        from .claude_cli_provider import ClaudeCliProvider
+
+        return ClaudeCliProvider(
+            binary=s.claude_cli_binary,
+            model=s.claude_cli_model,
+            timeout=s.claude_cli_timeout,
+        )
     if provider == "echo":
         from .echo_provider import EchoProvider
 

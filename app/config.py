@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # OpenAI
     openai_model: str = "gpt-4o"
 
+    # Claude Code CLI 공급자(별도 API 키 없이 Claude Code 인증 재사용)
+    claude_cli_binary: str = "claude"
+    claude_cli_model: str = ""  # 빈 값이면 Claude Code 기본 모델 사용
+    claude_cli_timeout: int = 180
+
     # 검색/청크 설정
     top_k: int = 6
     chunk_size: int = 1200
