@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+.DS_Store
+
+# 런타임 산출물
+/data/uploads/
+/data/outputs/
+/data/sample_csap_template.xlsx
+!/data/.gitkeep

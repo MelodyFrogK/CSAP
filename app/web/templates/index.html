@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSAP 명세서 자동 작성</title>
+  <style>
+    :root { --blue:#305496; --bg:#f4f6fb; --line:#dfe3ec; }
+    * { box-sizing: border-box; }
+    body { font-family: "Pretendard", -apple-system, "Malgun Gothic", sans-serif;
+      margin:0; background:var(--bg); color:#1c2330; }
+    header { background:var(--blue); color:#fff; padding:22px 28px; }
+    header h1 { margin:0; font-size:20px; }
+    header p { margin:6px 0 0; opacity:.85; font-size:13px; }
+    main { max-width:760px; margin:28px auto; padding:0 20px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:12px;
+      padding:22px; margin-bottom:18px; }
+    .card h2 { font-size:15px; margin:0 0 12px; }
+    label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+    input[type=file] { width:100%; padding:10px; border:1px dashed var(--line);
+      border-radius:8px; background:#fafbff; }
+    .hint { font-size:12px; color:#6b7280; margin-top:6px; }
+    button { background:var(--blue); color:#fff; border:0; padding:12px 20px;
+      border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .badge { display:inline-block; background:#eef2ff; color:var(--blue);
+      border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; }
+    progress { width:100%; height:14px; }
+    #result { display:none; }
+    .err { color:#b42318; font-size:13px; }
+    .ok { color:#067647; font-weight:600; }
+    a.dl { display:inline-block; margin-top:10px; background:#067647; color:#fff;
+      padding:11px 18px; border-radius:8px; text-decoration:none; font-weight:600; }
+    ul.errs { font-size:12px; color:#b42318; max-height:140px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CSAP 명세서 자동 작성 서비스</h1>
+    <p>기업 문서(PDF·Word)를 올리면 명세서 엑셀에 현황과 보완사항을 자동 작성합니다.</p>
+  </header>
+  <main>
+    <div class="card">
+      <h2>현재 LLM 공급자 <span class="badge">{{ provider }}</span></h2>
+      <form id="form">
+        <label>① 명세서 템플릿 (선택 — 미첨부 시 기본 샘플 사용)</label>
+        <input type="file" name="template" id="template" accept=".xlsx" />
+        <div class="hint">KISA CSAP 명세서 .xlsx. 헤더 문구로 열을 자동 인식합니다.</div>
+
+        <label>② 기업 제출 문서 (필수 · 복수 선택 가능)</label>
+        <input type="file" name="documents" id="documents" multiple
+               accept=".pdf,.docx,.doc,.txt,.md" required />
+        <div class="hint">지원 형식: {{ extensions }}</div>
+
+        <div style="margin-top:18px;">
+          <button type="submit" id="submit">분석 시작</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card" id="result">
+      <h2>처리 상태</h2>
+      <p id="statusText">대기 중…</p>
+      <progress id="bar" value="0" max="100"></progress>
+      <p id="current" class="hint"></p>
+      <div id="finish"></div>
+      <ul class="errs" id="errs"></ul>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const result = document.getElementById('result');
+    const statusText = document.getElementById('statusText');
+    const bar = document.getElementById('bar');
+    const current = document.getElementById('current');
+    const finish = document.getElementById('finish');
+    const errs = document.getElementById('errs');
+    const submit = document.getElementById('submit');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      finish.innerHTML = ''; errs.innerHTML = '';
+      submit.disabled = true; submit.textContent = '업로드 중…';
+      result.style.display = 'block';
+      statusText.textContent = '업로드 중…';
+
+      const fd = new FormData();
+      const tpl = document.getElementById('template').files[0];
+      if (tpl) fd.append('template', tpl);
+      for (const f of document.getElementById('documents').files) fd.append('documents', f);
+
+      let res;
+      try {
+        res = await fetch('/api/jobs', { method: 'POST', body: fd });
+      } catch (err) { return fail('네트워크 오류: ' + err); }
+      if (!res.ok) { const t = await res.json().catch(()=>({detail:res.statusText}));
+        return fail(t.detail || '요청 실패'); }
+      const { job_id } = await res.json();
+      poll(job_id);
+    });
+
+    function fail(msg) {
+      statusText.innerHTML = '<span class="err">오류: ' + msg + '</span>';
+      submit.disabled = false; submit.textContent = '분석 시작';
+    }
+
+    async function poll(jobId) {
+      try {
+        const r = await fetch('/api/jobs/' + jobId);
+        const j = await r.json();
+        statusText.textContent = '상태: ' + j.status;
+        const pct = j.total ? Math.round(j.done / j.total * 100) : 0;
+        bar.value = pct;
+        current.textContent = j.current ? ('처리 중: ' + j.current + ' (' + j.done + '/' + j.total + ')') : '';
+
+        if (j.status === 'done') {
+          statusText.innerHTML = '<span class="ok">완료</span> — ' + (j.message || '');
+          finish.innerHTML = '<a class="dl" href="' + j.download + '">결과 엑셀 다운로드</a>';
+          renderErrs(j.errors);
+          submit.disabled = false; submit.textContent = '분석 시작';
+          return;
+        }
+        if (j.status === 'error') { renderErrs(j.errors); return fail(j.message); }
+        setTimeout(() => poll(jobId), 1200);
+      } catch (err) { setTimeout(() => poll(jobId), 2000); }
+    }
+
+    function renderErrs(list) {
+      if (!list || !list.length) return;
+      errs.innerHTML = '<strong>일부 항목 경고:</strong>' +
+        list.map(e => '<li>' + e + '</li>').join('');
+    }
+  </script>
+</body>
+</html>

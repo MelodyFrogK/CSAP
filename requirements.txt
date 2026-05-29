@@ -1,0 +1,21 @@
+# Web framework
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+jinja2>=3.1
+
+# Config / schema
+pydantic>=2.6
+pydantic-settings>=2.2
+
+# Excel
+openpyxl>=3.1
+
+# Document parsing (PDF / Word)
+pypdf>=4.0
+pdfplumber>=0.11
+python-docx>=1.1
+
+# LLM providers (optional at runtime; import-guarded)
+anthropic>=0.40
+openai>=1.30
