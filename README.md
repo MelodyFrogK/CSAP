@@ -75,6 +75,21 @@ CSAP_OPENAI_MODEL=gpt-4o
 
 `echo` 공급자는 키 없이 형식만 확인하는 **데모 더미**입니다(실제 분석 아님).
 
+### 실 LLM 출력 품질 검증 (표본)
+
+전체를 다 돌리기 전에, 대표 점검항목 표본만 호출해 출력 품질을 확인합니다.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export CSAP_LLM_PROVIDER=anthropic
+python scripts/verify_llm.py --template "명세서.xlsx" --limit 10 회사문서.pdf
+```
+
+- 시트 전반에 고르게 표본을 뽑아(근거 있음/없음이 섞이도록) LLM을 호출합니다.
+- 결과를 `verify_report.md`(사람이 보기 좋은 표) + `verify_report.json`(원시)로 저장합니다.
+- 확인 포인트: 문서에 없는 주제가 `확인불가`로 나오는지(환각 여부), 근거 있는 항목의
+  현황이 사실과 맞는지, 보완사항이 구체적인지. (상세: `docs/prompt_quality_notes.md`)
+
 ## 프로젝트 구조
 
 ```

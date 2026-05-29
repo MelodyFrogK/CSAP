@@ -12,3 +12,7 @@ venv/
 /data/outputs/
 /data/sample_csap_template.xlsx
 !/data/.gitkeep
+
+# 검증 리포트 산출물
+/verify_report.md
+/verify_report.json
