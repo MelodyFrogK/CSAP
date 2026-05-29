@@ -96,3 +96,37 @@ def test_txt_extraction(tmp_path):
     f = tmp_path / "policy.txt"
     f.write_text("정보보호 정책을 수립하고 경영진 승인을 받았다.", encoding="utf-8")
     assert "정보보호" in documents.extract_text(f)
+
+
+def test_system_prompt_has_antihallucination():
+    from app.core import prompts
+
+    # 주제 환각 방지 규칙과 판정 기준이 프롬프트에 포함돼야 함
+    assert "환각" in prompts.SYSTEM_PROMPT
+    assert "확인불가" in prompts.SYSTEM_PROMPT
+    assert "공급망" in prompts.SYSTEM_PROMPT  # 반례 예시
+
+
+def test_echo_distinguishes_relevance():
+    """근거 있는 항목은 운영, 무관한 항목은 확인불가로 구분되어야 한다."""
+    from app.core import prompts
+    from app.llm.echo_provider import EchoProvider
+    from app.models import ControlItem
+
+    p = EchoProvider()
+    excerpt_doc = "당사는 정보보호 정책을 수립하고 CISO 승인 하에 지침을 문서화하여 운영한다."
+
+    related = ControlItem(
+        sheet="s", row=5, check_item="정보보호 정책을 수립하고 지침을 문서화하고 있는가?"
+    )
+    unrelated = ControlItem(
+        sheet="s", row=6, check_item="가상자원의 생성·변경·회수 절차를 운영하는가?"
+    )
+
+    from app.core.retrieval import Chunk
+
+    chunk = [Chunk(doc="d", index=0, text=excerpt_doc)]
+    r1 = p.complete_json(prompts.SYSTEM_PROMPT, prompts.build_user_prompt(related, chunk))
+    r2 = p.complete_json(prompts.SYSTEM_PROMPT, prompts.build_user_prompt(unrelated, chunk))
+    assert r1["operation"] == "운영"
+    assert r2["operation"] == "확인불가"

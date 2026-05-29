@@ -96,6 +96,7 @@ app/
 scripts/make_sample_template.py   샘플 템플릿(실제 레이아웃 모사)
 tests/                   스모크 테스트 (echo 공급자)
 docs/roadmap.md          향후 서비스(증적자료 제출목록·신청양식) 계획
+docs/prompt_quality_notes.md  프롬프트 품질 점검·보강 노트
 ```
 
 ## 테스트
