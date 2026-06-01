@@ -18,7 +18,7 @@ from starlette.requests import Request
 from .config import OUTPUT_DIR, UPLOAD_DIR, get_settings
 from .core import pipeline
 from .llm import get_provider
-from .parsing.documents import SUPPORTED_EXTENSIONS
+from .parsing.documents import ARCHIVE_EXTENSIONS, SUPPORTED_EXTENSIONS, extract_zip
 
 app = FastAPI(title="CSAP 명세서 자동 작성", version="0.1.0")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "web" / "templates"))
@@ -91,11 +91,20 @@ async def create_job(
         if not up.filename:
             continue
         ext = Path(up.filename).suffix.lower()
-        if ext not in SUPPORTED_EXTENSIONS:
+        if ext in ARCHIVE_EXTENSIONS:
+            # zip 압축 파일: 내부 지원 문서 추출
+            dest = job_dir / up.filename
+            _save(up, dest)
+            extracted = extract_zip(dest, job_dir / (dest.stem + "_unzipped"))
+            if not extracted:
+                raise HTTPException(400, f"{up.filename} 안에 지원하는 문서(.pdf/.docx/.txt 등)가 없습니다.")
+            doc_paths.extend(extracted)
+        elif ext in SUPPORTED_EXTENSIONS:
+            dest = job_dir / up.filename
+            _save(up, dest)
+            doc_paths.append(dest)
+        else:
             raise HTTPException(400, f"지원하지 않는 형식: {up.filename}")
-        dest = job_dir / up.filename
-        _save(up, dest)
-        doc_paths.append(dest)
 
     if not doc_paths:
         raise HTTPException(400, "유효한 기업 문서가 없습니다.")

@@ -16,7 +16,7 @@ from .core import pipeline
 def main(argv: list[str] | None = None) -> int:
     s = get_settings()
     parser = argparse.ArgumentParser(description="CSAP 명세서 자동 작성 (CLI)")
-    parser.add_argument("documents", nargs="+", help="기업 제출 문서(PDF/Word/txt)")
+    parser.add_argument("documents", nargs="+", help="기업 제출 문서(PDF/Word/txt/zip)")
     parser.add_argument("--template", default=s.default_template, help="명세서 엑셀 템플릿")
     parser.add_argument("--out", default="csap_result.xlsx", help="출력 엑셀 경로")
     args = parser.parse_args(argv)

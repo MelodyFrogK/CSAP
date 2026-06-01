@@ -49,8 +49,8 @@
 
         <label>② 기업 제출 문서 (필수 · 복수 선택 가능)</label>
         <input type="file" name="documents" id="documents" multiple
-               accept=".pdf,.docx,.doc,.txt,.md" required />
-        <div class="hint">지원 형식: {{ extensions }}</div>
+               accept=".pdf,.docx,.doc,.txt,.md,.zip" required />
+        <div class="hint">지원 형식: {{ extensions }}, .zip (여러 문서를 묶어 업로드 가능)</div>
 
         <div style="margin-top:18px;">
           <button type="submit" id="submit">분석 시작</button>

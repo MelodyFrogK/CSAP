@@ -30,12 +30,24 @@ class PipelineResult:
 
 
 def build_chunks(doc_paths: Iterable[str | Path]) -> list[Chunk]:
+    import tempfile
+
     s = get_settings()
     chunks: list[Chunk] = []
     for p in doc_paths:
         p = Path(p)
-        text = documents.extract_text(p)
-        chunks.extend(split_into_chunks(text, p.name, s.chunk_size, s.chunk_overlap))
+        if p.suffix.lower() == ".zip":
+            tmp = Path(tempfile.mkdtemp())
+            inner_files = documents.extract_zip(p, tmp)
+            for inner in inner_files:
+                try:
+                    text = documents.extract_text(inner)
+                    chunks.extend(split_into_chunks(text, inner.name, s.chunk_size, s.chunk_overlap))
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("zip 내부 파일 추출 실패 %s: %s", inner.name, exc)
+        else:
+            text = documents.extract_text(p)
+            chunks.extend(split_into_chunks(text, p.name, s.chunk_size, s.chunk_overlap))
     return chunks
 
 
