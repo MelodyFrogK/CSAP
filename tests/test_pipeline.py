@@ -43,6 +43,11 @@ def test_header_classify():
     assert _classify("관련문서(정책,지침등세부조항번호까지)") == "related_docs"
     assert _classify("운영증적(자산,파일등)") == "evidence"
     assert _classify("증적확인담당자(소속,이름,연락처)") == "person"
+    assert _classify("관련법규") == "related_law"
+    # 평가자 전용 열은 작성 대상이 아님(분류되지 않아야 함)
+    assert _classify("점검결과") is None
+    assert _classify("점검결과근거") is None
+    assert _classify("심사위원") is None
 
 
 def test_chunking_and_retrieval():
@@ -61,6 +66,10 @@ def test_template_detection_and_forward_fill():
     assert multi and all(i.domain and i.control for i in multi)
     layout = next(iter(layouts.values()))
     assert layout.col_check and layout.col_status and layout.col_operation
+    # 실제 양식 기반: 관련 법규 열과 (해설 2개 버전 중) 최신 해설 열을 인식
+    assert layout.col_related_law and layout.col_explanation
+    # 점검항목 해설(2024.7) = 8열(H)을 최신본으로 선택
+    assert layout.col_explanation == 8
 
 
 def test_full_pipeline_echo(tmp_path):
@@ -128,5 +137,5 @@ def test_echo_distinguishes_relevance():
     chunk = [Chunk(doc="d", index=0, text=excerpt_doc)]
     r1 = p.complete_json(prompts.SYSTEM_PROMPT, prompts.build_user_prompt(related, chunk))
     r2 = p.complete_json(prompts.SYSTEM_PROMPT, prompts.build_user_prompt(unrelated, chunk))
-    assert r1["operation"] == "운영"
-    assert r2["operation"] == "확인불가"
+    assert r1["assessment"] == "운영" and r1["operation"] == "Y"
+    assert r2["assessment"] == "확인불가" and r2["review_needed"] == "Y"

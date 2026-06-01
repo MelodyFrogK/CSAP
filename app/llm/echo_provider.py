@@ -37,18 +37,26 @@ class EchoProvider(LLMProvider):
 
         if has_excerpt and overlap >= 0.25:
             return {
-                "operation": "운영",
+                "operation": "Y",
+                "assessment": "운영",
                 "status": "[데모] 제출 문서에서 관련 이행 내용이 확인됩니다(핵심어 일치). "
                 "실제 LLM 연결 시 근거를 요약한 운영 현황이 작성됩니다.",
                 "related_docs": "[데모] 제출 문서(정책/지침)",
                 "evidence": "[데모] 관련 화면/파일",
+                "basis": "[데모] 점검항목 핵심어가 발췌에서 확인됨.",
                 "improvement": "[데모] 세부 절차·주기·책임자 명시 여부를 점검하세요.",
+                "recommended": "[데모] 관련 정책/지침과 증적 파일을 색인하여 준비하세요.",
+                "review_needed": "",
             }
         return {
-            "operation": "확인불가",
+            "operation": "",
+            "assessment": "확인불가",
             "status": "",
             "related_docs": "",
             "evidence": "",
+            "basis": "[데모] 발췌에서 이 점검항목의 직접 근거를 찾지 못함.",
             "improvement": "[데모] 제출 문서에서 이 점검항목에 대한 직접 근거를 찾지 못했습니다. "
             "관련 정책/절차/증적을 보완하세요.",
+            "recommended": "[데모] 관련 정책/지침·증적 문서를 준비하세요.",
+            "review_needed": "Y",
         }

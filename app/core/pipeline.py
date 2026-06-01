@@ -57,14 +57,22 @@ def _process_item(item: ControlItem, chunks: list[Chunk]) -> ItemResult:
     relevant = top_chunks(item.context_text(), chunks, s.top_k)
     user = prompts.build_user_prompt(item, relevant)
     data = provider.complete_json(prompts.SYSTEM_PROMPT, user)
+
+    def g(key: str) -> str:
+        return str(data.get(key, "")).strip()
+
     return ItemResult(
         sheet=item.sheet,
         row=item.row,
-        operation=str(data.get("operation", "")).strip(),
-        status=str(data.get("status", "")).strip(),
-        related_docs=str(data.get("related_docs", "")).strip(),
-        evidence=str(data.get("evidence", "")).strip(),
-        improvement=str(data.get("improvement", "")).strip(),
+        operation=g("operation"),
+        status=g("status"),
+        related_docs=g("related_docs"),
+        evidence=g("evidence"),
+        assessment=g("assessment"),
+        basis=g("basis"),
+        improvement=g("improvement"),
+        recommended=g("recommended"),
+        review_needed=g("review_needed"),
     )
 
 

@@ -14,12 +14,15 @@ from openpyxl.utils import get_column_letter
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "sample_csap_template.xlsx"
 
+# 실제 KISA SaaS 표준 명세서(17열) 레이아웃을 본뜬 헤더. C열은 세부통제 코드(헤더 없음).
 HEADERS = [
-    "분야", "통제항목", "", "세부 통제내용", "점검항목", "점검항목 해설",
+    "분야", "통제항목", "", "세부 통제내용", "관련 법규", "점검항목",
+    "점검항목 해설(2024. 6.)", "점검항목 해설(2024. 7.)",
     "운영여부", "운영 현황",
     "관련문서\n(정책, 지침 등 세부조항번호까지)",
     "운영 증적\n(자산, 파일 등)",
     "증적확인 담당자\n(소속, 이름, 연락처)",
+    "점검결과", "점검결과 근거", "심사위원",
 ]
 
 # (분야, 통제항목, 세부통제코드, 세부통제내용, [점검항목들])
@@ -55,9 +58,10 @@ def _build_sheet(ws, blocks):
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     ws.cell(row=1, column=1, value="클라우드 보안인증 평가방법 및 점검표").font = Font(bold=True)
-    ws.merge_cells(start_row=1, end_row=1, start_column=1, end_column=11)
+    ws.merge_cells(start_row=1, end_row=1, start_column=1, end_column=len(HEADERS))
     ws.cell(row=3, column=1, value="클라우드컴퓨팅서비스 보안인증기준")
-    ws.cell(row=3, column=7, value="클라우드컴퓨팅서비스 보안운영 명세서")
+    ws.cell(row=3, column=9, value="클라우드컴퓨팅서비스 보안운영 명세서")
+    ws.cell(row=3, column=14, value="서면 및 현장 평가")
 
     for c, h in enumerate(HEADERS, start=1):
         cell = ws.cell(row=4, column=c, value=h)
@@ -66,7 +70,7 @@ def _build_sheet(ws, blocks):
         cell.alignment = center
     ws.merge_cells(start_row=4, end_row=4, start_column=2, end_column=3)  # 통제항목 B4:C4
 
-    widths = [16, 16, 18, 36, 46, 46, 10, 30, 24, 22, 18]
+    widths = [16, 16, 18, 36, 28, 46, 44, 44, 10, 30, 24, 22, 18, 12, 30, 12]
     for c, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(c)].width = w
 
@@ -79,9 +83,11 @@ def _build_sheet(ws, blocks):
                 ws.cell(row=r, column=2, value=control).alignment = wrap
                 ws.cell(row=r, column=3, value=sub).alignment = wrap
                 ws.cell(row=r, column=4, value=detail).alignment = wrap
+                ws.cell(row=r, column=5, value="• 관련 법규(예시)").alignment = wrap
                 first = False
-            ws.cell(row=r, column=5, value=q).alignment = wrap
-            ws.cell(row=r, column=6, value="∎ 관련 해설(예시).").alignment = wrap
+            ws.cell(row=r, column=6, value=q).alignment = wrap
+            ws.cell(row=r, column=7, value="∎ 관련 해설(2024.6 예시).").alignment = wrap
+            ws.cell(row=r, column=8, value="∎ 관련 해설(2024.7 예시).").alignment = wrap
             r += 1
 
 
